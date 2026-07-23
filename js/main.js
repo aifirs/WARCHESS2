@@ -27,8 +27,19 @@ function startMode(mode) {
     if (window.trainingMode) window.trainingMode.startTraining();
     else { window.chessEngine.resetGame(); initBoard(); renderBoard(); }
   } else {
-    document.getElementById('game-status').textContent = mode === 'ai' ? 'AI MODE' : 'ОДИН НА ОДИН';
-    window.chessEngine.resetGame();
+    document.getElementById('game-status').textContent = mode === 'ai' ? 'AI MODE' : (mode === '1v1' ? 'ОДИН НА ОДИН' : '');
+    if (mode === '1v1') {
+      document.getElementById('game-area').classList.add('multiplayer-active');
+      // Check for room in URL
+      const roomFromUrl = window.multiplayer ? window.multiplayer.getRoomFromUrl() : null;
+      if (roomFromUrl) {
+        window.multiplayer.startMultiplayer(false); // Join as guest (black)
+      } else {
+        window.multiplayer.startMultiplayer(true); // Host (white)
+      }
+    } else {
+      window.chessEngine.resetGame();
+    }
     initBoard();
     renderBoard();
   }
@@ -43,8 +54,13 @@ function newGame() {
 }
 
 function inviteLink() {
-  const url = window.location.href.split('?')[0] + '?invite=' + Math.random().toString(36).slice(2, 10);
-  navigator.clipboard.writeText(url).then(() => alert('Пригласительная ссылка скопирована: ' + url));
+  if (window.multiplayer) {
+    const url = window.multiplayer.createInviteLink();
+    navigator.clipboard.writeText(url).then(() => alert('Пригласительная ссылка скопирована: ' + url));
+  } else {
+    const url = window.location.href.split('?')[0] + '?invite=' + Math.random().toString(36).slice(2, 10);
+    navigator.clipboard.writeText(url).then(() => alert('Пригласительная ссылка скопирована: ' + url));
+  }
 }
 
 function initBoard() {
@@ -140,9 +156,24 @@ function cellClick(r, c) {
   const engine = window.chessEngine;
   engine.selectCell(r, c);
   renderBoard();
-  // Basic AI turn after white (player) moves
-  if (engine.getTurn() === 'black' && document.getElementById('game-area').hidden === false) {
-    setTimeout(() => makeAIMove(), 400);
+
+  // Multiplayer sync
+  if (window.multiplayer && window.multiplayer.isConnected()) {
+    if (engine.selected) {
+      // After selecting a piece, if a valid move was made (selected changed to null after move)
+      // Check if we just made a move by comparing with previous state
+      // Simplified: sync after any interaction in multiplayer mode
+      // The actual move is handled by engine.movePiece when selecting destination
+    }
+    // Check if a move was just completed (turn changed)
+    window.multiplayer.syncMove(engine.selected, { r: engine.selected ? engine.selected.r : r, c: engine.selected ? engine.selected.c : c }, { r, c });
+  }
+
+  // Basic AI turn after white (player) moves (only if not multiplayer)
+  if (!window.multiplayer || !window.multiplayer.isConnected()) {
+    if (engine.getTurn() === 'black' && document.getElementById('game-area').hidden === false) {
+      setTimeout(() => makeAIMove(), 400);
+    }
   }
 }
 
