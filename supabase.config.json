@@ -1,0 +1,18 @@
+{
+  "project_id": "xtnegqwiprzutbirlhxc",
+  "project_name": "WARCHESS 2",
+  "region": "us-east-1",
+  "database": "postgres",
+  "api_key_environment": "production",
+  "build_command": "echo 'Static site - no build needed'",
+  "output_path": "./",
+  "environment": {
+    "SUPABASE_URL": "https://xtnegqwiprzutbirlhxc.supabase.co",
+    "SUPABASE_ANON_KEY": "your_anon_key_here",
+    "SUPABASE_SERVICE_ROLE_KEY": "your_service_role_key_here"
+  },
+  "storage": {
+    "bucket": "warchess2-static",
+    "public": true
+  }
+}

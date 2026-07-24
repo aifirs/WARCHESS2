@@ -32,9 +32,6 @@ function getAllMoves(boardState, color) {
     for (let c = 0; c < 8; c++) {
       const p = boardState[r][c];
       if (p && p.color === color) {
-        // Use engine's generateMoves logic simplified here
-        // For simplicity, we'll rely on the engine's move generation if available
-        // But for AI evaluation, we'll implement a basic move generator
         const basicMoves = generateBasicMoves(boardState, r, c);
         for (const to of basicMoves) {
           moves.push({ from: { r, c }, to: { ...to }, piece: { ...p } });
@@ -92,11 +89,15 @@ function generateBasicMoves(boardState, r, c) {
       }
     }
   } else if (p.type === 'knight') {
-    for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]])
-      moves.push({ r: r + dr, c: c + dc });
+    for (const [dr, dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+      const rr = r + dr, cc = c + dc;
+      if (inBounds(rr, cc)) moves.push({ r: rr, c: cc });
+    }
   } else if (p.type === 'king') {
-    for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]])
-      moves.push({ r: r + dr, c: c + dc });
+    for (const [dr, dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+      const rr = r + dr, cc = c + dc;
+      if (inBounds(rr, cc)) add(rr, cc);
+    }
   }
   return moves.filter(m => inBounds(m.r, m.c));
 }
@@ -143,7 +144,7 @@ function findBestMove(boardState, color) {
   let bestScore = -Infinity;
   for (const move of moves) {
     const newState = applyMoveToState(boardState, move);
-    const score = minMax(newState, depth - 1, false); // After AI move, it's opponent's turn (minimizing for AI)
+    const score = minMax(newState, depth - 1, false);
     if (score > bestScore) {
       bestScore = score;
       bestMove = move;
@@ -160,8 +161,13 @@ function getDifficulty() { return aiDifficulty; }
 
 if (typeof window !== 'undefined') {
   window.aiEngine = {
-    findBestMove, setDifficulty, getDifficulty,
-    AI_DEPTHS, aiDifficulty,
-    evaluateBoard, getAllMoves, applyMoveToState
+    findBestMove,
+    setDifficulty,
+    getDifficulty,
+    AI_DEPTHS,
+    aiDifficulty,
+    evaluateBoard,
+    getAllMoves,
+    applyMoveToState
   };
 }

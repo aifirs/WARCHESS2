@@ -1,5 +1,5 @@
 /* WARCHESS 2 — Service Worker (PWA Cache) */
-const CACHE = 'warchess2-v1';
+const CACHE = 'warchess2-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -24,8 +24,12 @@ const ASSETS = [
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS)).catch(err => {
-      console.error('SW install failed:', err);
+    caches.open(CACHE).then(cache => {
+      return cache.addAll(ASSETS).catch(err => {
+        console.warn('SW: Некоторые активы не загружены:', err);
+        // Continue even if some assets fail
+        return Promise.resolve();
+      });
     })
   );
   self.skipWaiting();
@@ -33,10 +37,26 @@ self.addEventListener('install', e => {
 
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match('/')))
+    caches.match(e.request).then(r => {
+      return r || fetch(e.request).catch(() => {
+        // Если сеть недоступна, вернуть главную страницу
+        return caches.match('/');
+      });
+    })
   );
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(self.clients.claim());
+  e.waitUntil(
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
+  );
+  self.clients.claim();
 });
