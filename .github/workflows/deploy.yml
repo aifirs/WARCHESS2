@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_PROJECT_REF: xtnegqwiprzutbirlhxc
+      SUPABASE_CLI_VERSION: '1.79.0'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -20,7 +22,15 @@ jobs:
           node-version: '20'
 
       - name: Install Supabase CLI
-        run: npm install -g supabase@latest
+        run: npm install -g supabase@${{ env.SUPABASE_CLI_VERSION }}
+
+      - name: Supabase CLI debug
+        run: |
+          echo "Supabase CLI version and storage help (for debugging)"
+          supabase --version || true
+          supabase storage --help || true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Link Supabase project
         run: supabase link --project-ref $SUPABASE_PROJECT_REF
@@ -33,20 +43,27 @@ jobs:
           rm -rf ./deploy_package || true
           mkdir -p ./deploy_package
           rsync -a --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='README.md' --exclude='deploy.sh' --exclude='.github/workflows' ./ ./deploy_package/
-          echo "Files to be uploaded:"
-          find ./deploy_package -maxdepth 3 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" -o -name "*.png" -o -name "*.jpg" -o -name "manifest.json" -o -name "sw.js" \) | sort
+          echo "Files to be uploaded (sample):"
+          find ./deploy_package -type f | head -n 200
 
       - name: Ensure storage bucket exists
         run: |
-          # Create a public bucket for the static site if it doesn't exist. Do not fail if it already exists.
-          supabase storage create-bucket warchess2-static --public || true
+          echo "Ensuring bucket warchess2-static exists (idempotent)"
+          if supabase storage buckets list | grep -q 'warchess2-static'; then
+            echo "Bucket warchess2-static already exists"
+          else
+            # Try new-style command, fallback to older; do not fail the job if creation fails.
+            supabase storage buckets create warchess2-static --public || \
+            supabase storage create-bucket warchess2-static --public || true
+          fi
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Upload static files to Supabase Storage
         run: |
           echo "Uploading deploy_package -> bucket: warchess2-static"
-          supabase storage upload warchess2-static ./deploy_package --recursive
+          # Use 'cp' with --recursive (correct subcommand placement)
+          supabase storage cp ./deploy_package warchess2-static --recursive
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
