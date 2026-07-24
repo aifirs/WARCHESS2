@@ -21,6 +21,8 @@ function backToMenu() {
 function startMode(mode) {
   document.getElementById('main-menu').hidden = true;
   document.getElementById('game-area').hidden = false;
+  document.getElementById('game-area').classList.remove('training-active', 'multiplayer-active');
+  
   if (mode === 'training') {
     document.getElementById('game-area').classList.add('training-active');
     document.getElementById('game-status').textContent = 'ОБУЧЕНИЕ';
@@ -58,7 +60,7 @@ function inviteLink() {
     const url = window.multiplayer.createInviteLink();
     navigator.clipboard.writeText(url).then(() => alert('Пригласительная ссылка скопирована: ' + url));
   } else {
-    const url = window.location.href.split('?')[0] + '?invite=' + Math.random().toString(36).slice(2, 10);
+    const url = window.location.href.split('?')[0] + '?room=' + Math.random().toString(36).slice(2, 10);
     navigator.clipboard.writeText(url).then(() => alert('Пригласительная ссылка скопирована: ' + url));
   }
 }
@@ -88,6 +90,7 @@ function renderBoard() {
       if (!cell) continue;
       // Clear previous piece text
       cell.innerHTML = '';
+      cell.style.position = 'relative';
       const piece = boardState[r][c];
       if (piece) {
         const span = document.createElement('span');
@@ -128,13 +131,16 @@ function renderBoard() {
   // Update status
   const status = document.getElementById('game-status');
   if (status) {
-    status.textContent = 'Ход: ' + (engine.getTurn() === 'white' ? 'РИМ (ЦЕЗАРЬ)' : 'МАКЕДОНИЯ (АЛЕКСАНДР)');
+    const gameArea = document.getElementById('game-area');
+    if (!gameArea.classList.contains('training-active') && !gameArea.classList.contains('multiplayer-active')) {
+      status.textContent = 'Ход: ' + (engine.getTurn() === 'white' ? 'РИМ (ЦЕЗАРЬ)' : 'МАКЕДОНИЯ (АЛЕКСАНДР)');
+    }
   }
 }
 
 function cellClick(r, c) {
   // Training mode override
-  if (window.trainingMode && document.getElementById('game-status').textContent.includes('ОБУЧЕНИЕ')) {
+  if (window.trainingMode && document.getElementById('game-area').classList.contains('training-active')) {
     const from = window.chessEngine.selected ? window.chessEngine.selected : null;
     if (!from) {
       // First click: select piece if it's the player's turn
@@ -173,9 +179,10 @@ function cellClick(r, c) {
     window.__prevCell = engine.selected ? engine.selected : { r, c };
   }
 
-  // Basic AI turn after white (player) moves (only if not multiplayer)
-  if (!window.multiplayer || !window.multiplayer.isConnected()) {
-    if (engine.getTurn() === 'black' && document.getElementById('game-area').hidden === false) {
+  // Basic AI turn after white (player) moves (only if not multiplayer and not training)
+  const gameArea = document.getElementById('game-area');
+  if ((!window.multiplayer || !window.multiplayer.isConnected()) && !gameArea.classList.contains('training-active')) {
+    if (engine.getTurn() === 'black' && gameArea.hidden === false) {
       setTimeout(() => makeAIMove(), 400);
     }
   }
@@ -183,7 +190,8 @@ function cellClick(r, c) {
 
 function makeAIMove() {
   const engine = window.chessEngine;
-  if (engine.getTurn() !== 'black' || document.getElementById('game-area').hidden === true) return;
+  const gameArea = document.getElementById('game-area');
+  if (engine.getTurn() !== 'black' || gameArea.hidden === true || gameArea.classList.contains('training-active')) return;
 
   // Use enhanced AI engine
   if (window.aiEngine) {
@@ -216,12 +224,14 @@ function makeAIMove() {
 
 // Initialize on load
 window.addEventListener('DOMContentLoaded', () => {
+  // Инициализируем доску ДО вызова renderBoard()
   initBoard();
   document.getElementById('side-menu').hidden = true;
   document.getElementById('side-menu').setAttribute('aria-hidden', 'true');
   // Initialize engine
   if (window.chessEngine) {
     window.chessEngine.resetGame();
+    renderBoard();
   }
 });
 

@@ -170,10 +170,21 @@ function selectCell(r, c) {
 // Export for browser
 if (typeof window !== 'undefined') {
   window.chessEngine = {
-    board, turn, selected, validMoves,
-    initialBoard, getBoardState, getTurn,
-    selectCell, movePiece, resetGame,
-    generateMoves, isCheckmate,
-    PIECES, TYPES
+    board,
+    turn,
+    selected,
+    validMoves,
+    PIECES,
+    TYPES,
+    initialBoard,
+    getBoardState,
+    getTurn,
+    selectCell,
+    movePiece,
+    resetGame,
+    generateMoves,
+    isCheckmate,
+    inBounds,
+    getPiece
   };
 }
