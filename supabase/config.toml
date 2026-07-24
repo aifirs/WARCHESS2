@@ -1,0 +1,14 @@
+[project]
+id = "xtnegqwiprzutbirlhxc"
+name = "WARCHESS2"
+description = "WARCHESS 2 — эпическая шахматная битва империй (античный стиль ROMA)"
+
+[functions]
+# Статический хостинг — без функций (только статические файлы)
+
+[storage]
+bucket = "warchess2-static"
+public = true
+
+[realtime]
+channels = ["room-*"]
