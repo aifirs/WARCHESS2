@@ -142,9 +142,16 @@ function cellClick(r, c) {
       renderBoard();
       return;
     }
+    // Check if this is a valid training move BEFORE applying
     const ok = window.trainingMode.checkTrainingMove(from, { r, c });
-    if (!ok) {
-      // Try selecting another piece
+    if (ok) {
+      // Manually apply the correct move to the engine
+      window.chessEngine.movePiece(from, { r, c });
+      window.chessEngine.selected = null;
+      window.chessEngine.validMoves = [];
+      renderBoard();
+    } else {
+      // Try selecting another piece (don't apply wrong move)
       window.chessEngine.selected = null;
       window.chessEngine.validMoves = [];
       window.chessEngine.selectCell(r, c);
@@ -159,14 +166,11 @@ function cellClick(r, c) {
 
   // Multiplayer sync
   if (window.multiplayer && window.multiplayer.isConnected()) {
-    if (engine.selected) {
-      // After selecting a piece, if a valid move was made (selected changed to null after move)
-      // Check if we just made a move by comparing with previous state
-      // Simplified: sync after any interaction in multiplayer mode
-      // The actual move is handled by engine.movePiece when selecting destination
+    // Simple sync: if selected is null after click, a move was completed
+    if (!engine.selected && window.__prevCell) {
+      window.multiplayer.syncMove(window.__prevCell, { r, c });
     }
-    // Check if a move was just completed (turn changed)
-    window.multiplayer.syncMove(engine.selected, { r: engine.selected ? engine.selected.r : r, c: engine.selected ? engine.selected.c : c }, { r, c });
+    window.__prevCell = engine.selected ? engine.selected : { r, c };
   }
 
   // Basic AI turn after white (player) moves (only if not multiplayer)
