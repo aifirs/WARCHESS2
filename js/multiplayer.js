@@ -79,9 +79,8 @@ function setupBasicSync() {
   });
 }
 
-function syncMove(move, from, to) {
+function syncMove(from, to) {
   // Broadcast the move
-  // For basic demonstration, update URL hash
   const newTurn = MP.playerColor === 'white' ? 'black' : 'white';
   window.location.hash = 'turn=' + newTurn;
 

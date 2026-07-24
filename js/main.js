@@ -224,3 +224,12 @@ window.addEventListener('DOMContentLoaded', () => {
     window.chessEngine.resetGame();
   }
 });
+
+// PWA Service Worker Registration
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    console.log('WARCHESS 2: Service Worker зарегистрирован', reg.scope);
+  }).catch(err => {
+    console.error('WARCHESS 2: Ошибка регистрации Service Worker', err);
+  });
+}
