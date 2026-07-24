@@ -8,6 +8,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: xtnegqwiprzutbirlhxc
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,27 +20,40 @@ jobs:
           node-version: '20'
 
       - name: Install Supabase CLI
-        run: npm install -g supabase
+        run: npm install -g supabase@latest
 
-      - name: Link project
-        run: supabase link --project-ref xtnegqwiprzutbirlhxc
+      - name: Link Supabase project
+        run: supabase link --project-ref $SUPABASE_PROJECT_REF
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Deploy static files
+      - name: Prepare deploy package
         run: |
-          echo "Deploying WARCHESS 2 static assets to Supabase..."
-          # Статические файлы готовы к загрузке в Storage или через хостинг
-          # См. deploy.sh для ручной загрузки
-          ls -la
+          echo "Preparing deploy package (excluding .git, .github, node_modules)"
+          rm -rf ./deploy_package || true
+          mkdir -p ./deploy_package
+          rsync -a --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='README.md' --exclude='deploy.sh' --exclude='.github/workflows' ./ ./deploy_package/
+          echo "Files to be uploaded:"
+          find ./deploy_package -maxdepth 3 -type f \( -name "*.html" -o -name "*.css" -o -name "*.js" -o -name "*.json" -o -name "*.png" -o -name "*.jpg" -o -name "manifest.json" -o -name "sw.js" \) | sort
 
-      - name: Build info
+      - name: Ensure storage bucket exists
+        run: |
+          # Create a public bucket for the static site if it doesn't exist. Do not fail if it already exists.
+          supabase storage create-bucket warchess2-static --public || true
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Upload static files to Supabase Storage
+        run: |
+          echo "Uploading deploy_package -> bucket: warchess2-static"
+          supabase storage upload warchess2-static ./deploy_package --recursive
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Print build & deploy info
         run: |
           echo "Project: WARCHESS 2"
           echo "Branch: ${{ github.ref_name }}"
           echo "Commit: ${{ github.sha }}"
-          echo "Deploy target: https://supabase.com/dashboard/project/xtnegqwiprzutbirlhxc"
-        run: |
-        
-          echo "Commit: ${{ github.sha }}"
-          echo "Deploy target: https://supabase.com/dashboard/project/xtnegqwiprzutbirlhxc"
+          echo "Supabase project ref: $SUPABASE_PROJECT_REF"
+          echo "Supabase dashboard: https://supabase.com/dashboard/project/$SUPABASE_PROJECT_REF"
