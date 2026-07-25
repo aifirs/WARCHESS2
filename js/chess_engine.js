@@ -146,6 +146,10 @@ function getBoardState() {
 
 function getTurn() { return turn; }
 
+function getSelected() { return selected ? { ...selected } : null; }
+function getValidMoves() { return validMoves.map(m => ({ ...m })); }
+function clearSelection() { selected = null; validMoves = []; }
+
 function selectCell(r, c) {
   const p = getPiece(r, c);
   if (!p || p.color !== turn) {
@@ -170,15 +174,14 @@ function selectCell(r, c) {
 // Export for browser
 if (typeof window !== 'undefined') {
   window.chessEngine = {
-    board,
-    turn,
-    selected,
-    validMoves,
     PIECES,
     TYPES,
     initialBoard,
     getBoardState,
     getTurn,
+    getSelected,
+    getValidMoves,
+    clearSelection,
     selectCell,
     movePiece,
     resetGame,

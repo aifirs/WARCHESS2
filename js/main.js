@@ -101,10 +101,11 @@ function renderBoard() {
       }
       // Highlight selected and valid moves
       cell.classList.remove('selected', 'valid-move');
-      if (engine.selected && engine.selected.r === r && engine.selected.c === c) {
+      const sel = engine.getSelected ? engine.getSelected() : null;
+      if (sel && sel.r === r && sel.c === c) {
         cell.classList.add('selected');
       }
-      const isValid = engine.validMoves.some(m => m.r === r && m.c === c);
+      const isValid = (engine.getValidMoves ? engine.getValidMoves() : []).some(m => m.r === r && m.c === c);
       if (isValid) {
         cell.classList.add('valid-move');
         // Add a small indicator dot for valid moves
@@ -141,7 +142,7 @@ function renderBoard() {
 function cellClick(r, c) {
   // Training mode override
   if (window.trainingMode && document.getElementById('game-area').classList.contains('training-active')) {
-    const from = window.chessEngine.selected ? window.chessEngine.selected : null;
+    const from = window.chessEngine.getSelected ? window.chessEngine.getSelected() : null;
     if (!from) {
       // First click: select piece if it's the player's turn
       window.chessEngine.selectCell(r, c);
@@ -153,13 +154,12 @@ function cellClick(r, c) {
     if (ok) {
       // Manually apply the correct move to the engine
       window.chessEngine.movePiece(from, { r, c });
-      window.chessEngine.selected = null;
-      window.chessEngine.validMoves = [];
+      // clear selection via engine API
+      window.chessEngine.clearSelection && window.chessEngine.clearSelection();
       renderBoard();
     } else {
       // Try selecting another piece (don't apply wrong move)
-      window.chessEngine.selected = null;
-      window.chessEngine.validMoves = [];
+      window.chessEngine.clearSelection && window.chessEngine.clearSelection();
       window.chessEngine.selectCell(r, c);
       renderBoard();
     }
@@ -173,10 +173,10 @@ function cellClick(r, c) {
   // Multiplayer sync
   if (window.multiplayer && window.multiplayer.isConnected()) {
     // Simple sync: if selected is null after click, a move was completed
-    if (!engine.selected && window.__prevCell) {
+    if (!(engine.getSelected ? engine.getSelected() : null) && window.__prevCell) {
       window.multiplayer.syncMove(window.__prevCell, { r, c });
     }
-    window.__prevCell = engine.selected ? engine.selected : { r, c };
+    window.__prevCell = (engine.getSelected ? engine.getSelected() : null) ? (engine.getSelected ? engine.getSelected() : null) : { r, c };
   }
 
   // Basic AI turn after white (player) moves (only if not multiplayer and not training)
@@ -237,7 +237,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(reg => {
+  // Use relative path for GitHub Pages compatibility
+  navigator.serviceWorker.register('sw.js').then(reg => {
     console.log('WARCHESS 2: Service Worker зарегистрирован', reg.scope);
   }).catch(err => {
     console.error('WARCHESS 2: Ошибка регистрации Service Worker', err);
