@@ -1,80 +1,42 @@
-name: Deploy WARCHESS 2 to Supabase
+steps:
+  - name: Check out repository
+    uses: actions/checkout@v4
 
-on:
-  push:
-    branches: [arena/019f90ae-warchess2, main]
-  workflow_dispatch:
+  - name: Ensure index.html exists
+    run: |
+      if [ ! -f "index.html" ]; then
+        echo "index.html not found — aborting"
+        exit 1
+      fi
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  - name: Set up Node.js
+    uses: actions/setup-node@v4
+    with:
+      node-version: '18'
+
+  - name: Install Supabase CLI
+    run: npm install -g supabase
+
+  - name: Link Supabase project
     env:
-      SUPABASE_PROJECT_REF: xtnegqwiprzutbirlhxc
-      SUPABASE_CLI_VERSION: '1.79.0'
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    run: |
+      if [ -z "$SUPABASE_ACCESS_TOKEN" ] || [ -z "$SUPABASE_PROJECT_REF" ]; then
+        echo "SUPABASE_PROJECT_REF or SUPABASE_ACCESS_TOKEN secret is missing"
+        exit 1
+      fi
+      SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase link --project-ref "$SUPABASE_PROJECT_REF"
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+  - name: Upload static files to Supabase Storage
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+    run: |
+      set -e
+      BUCKET=warchess2-static
+      SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase storage create "$BUCKET" || true
+      SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" supabase storage upload "$BUCKET" . --recursive
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install Supabase CLI
-        run: npm install -g supabase@${{ env.SUPABASE_CLI_VERSION }}
-
-      - name: Supabase CLI debug
-        run: |
-          echo "Supabase CLI version and storage help (for debugging)"
-          supabase --version || true
-          supabase storage --help || true
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Link Supabase project
-        run: supabase link --project-ref $SUPABASE_PROJECT_REF
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Prepare deploy package
-        run: |
-          echo "Preparing deploy package (excluding .git, .github, node_modules)"
-          rm -rf ./deploy_package || true
-          mkdir -p ./deploy_package
-          rsync -a --exclude='.git' --exclude='.github' --exclude='node_modules' --exclude='README.md' --exclude='deploy.sh' --exclude='.github/workflows' ./ ./deploy_package/
-          echo "Files to be uploaded (sample):"
-          find ./deploy_package -type f | head -n 200
-
-      - name: Ensure storage bucket exists
-        run: |
-          echo "Ensuring bucket warchess2-static exists (idempotent)"
-          if supabase storage buckets list | grep -q 'warchess2-static'; then
-            echo "Bucket warchess2-static already exists"
-          else
-            # Try new-style command, fallback to older; do not fail the job if creation fails.
-            supabase storage buckets create warchess2-static --public || \
-            supabase storage create-bucket warchess2-static --public || true
-          fi
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Upload static files to Supabase Storage
-        run: |
-          echo "Uploading deploy_package -> bucket: warchess2-static"
-          # Use 'cp' with --recursive (correct subcommand placement)
-          supabase storage cp ./deploy_package warchess2-static --recursive
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
-      - name: Print build & deploy info
-        run: |
-          echo "Project: WARCHESS 2"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Supabase project ref: $SUPABASE_PROJECT_REF"
-          echo "Supabase dashboard: https://supabase.com/dashboard/project/$SUPABASE_PROJECT_REF"
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit: ${{ github.sha }}"
-          echo "Supabase project ref: $SUPABASE_PROJECT_REF"
-          echo "Supabase dashboard: https://supabase.com/dashboard/project/$SUPABASE_PROJECT_REF"
+  - name: Done
+    run: echo "Supabase deploy step finished. Check Supabase dashboard or action logs for details."
