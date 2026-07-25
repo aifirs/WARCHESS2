@@ -124,9 +124,9 @@
         <button onclick="closeMenu(); startMode('ai');" data-i18n="btnAI">AI MODE</button>
         <div style="margin: 0.5rem 0; text-align: left; font-size: 0.8rem; color: var(--text-sub); letter-spacing: 0.05em;" data-i18n="aiDifficulty">AI СЛОЖНОСТЬ:</div>
         <div style="display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-start;">
-          <button onclick="closeMenu(); window.aiEngine && window.aiEngine.setDifficulty('easy'); startMode('ai');" style="flex:1; padding:0.5rem; font-size:0.75rem; background: var(--bg-card); color: var(--gold); border: 1px solid rgba(200,168,92,0.2); border-radius:6px;" data-i18n="aiEasy">ЛЁГКО</button>
-          <button onclick="closeMenu(); window.aiEngine && window.aiEngine.setDifficulty('medium'); startMode('ai');" style="flex:1; padding:0.5rem; font-size:0.75rem; background: var(--bg-card); color: var(--gold); border: 1px solid rgba(200,168,92,0.2); border-radius:6px;" data-i18n="aiMedium">СРЕДНЕ</button>
-          <button onclick="closeMenu(); window.aiEngine && window.aiEngine.setDifficulty('hard'); startMode('ai');" style="flex:1; padding:0.5rem; font-size:0.75rem; background: var(--bg-card); color: var(--gold); border: 1px solid rgba(200,168,92,0.2); border-radius:6px;" data-i18n="aiHard">СЛОЖНО</button>
+          <button onclick="closeMenu(); window.aiEngine && window.aiEngine.setDifficulty('easy'); startMode('ai');" style="flex:1; padding:0.5rem; font-size:0.75rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--gold); border-radius: 6px; cursor: pointer;">ЛЁГКО</button>
+          <button onclick="closeMenu(); window.aiEngine && window.aiEngine.setDifficulty('medium'); startMode('ai');" style="flex:1; padding:0.5rem; font-size:0.75rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--gold); border-radius: 6px; cursor: pointer;">СРЕДНЕ</button>
+          <button onclick="closeMenu(); window.aiEngine && window.aiEngine.setDifficulty('hard'); startMode('ai');" style="flex:1; padding:0.5rem; font-size:0.75rem; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--gold); border-radius: 6px; cursor: pointer;">СЛОЖНО</button>
         </div>
         <button onclick="closeMenu(); startMode('1v1');" data-i18n="btn1v1">ОДИН НА ОДИН</button>
         <button onclick="closeMenu();" class="btn-close" data-i18n="btnClose">ЗАКРЫТЬ</button>
